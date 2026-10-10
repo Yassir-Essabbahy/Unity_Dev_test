@@ -20,13 +20,16 @@ public class TankHealth : MonoBehaviour
     {
         // if god mode is enabled
         if (DebugStats.isGodMode) return;
-        
+
         currentHealth -= damage;
         UpdateHealthBar();
 
         if (currentHealth <= 0)
         {
-            GameOverPanel.SetActive(true);
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.TriggerGameOver();
+            }
             Destroy(this.gameObject);
         }
     }
