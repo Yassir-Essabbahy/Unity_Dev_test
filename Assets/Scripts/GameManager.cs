@@ -9,7 +9,11 @@ public class GameManager : MonoBehaviour
     public GameObject victoryPanel;
     public GameObject gameOverPanel;
 
+    [Header("Settings")]
+    public bool requiresKillingEnemies = true;
+
     private bool isGameOver = false;
+    private float checkTimer = 0f;
 
     void Awake()
     {
@@ -18,38 +22,47 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-
         Time.timeScale = 1f;
         if (victoryPanel != null) victoryPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        // Test frame
+        checkTimer = 0.5f;
     }
 
     void Update()
     {
-        if (isGameOver) return;
+        if (isGameOver || !requiresKillingEnemies) return;
 
-        // kill all enemies
-        int remainingEnemies = FindObjectsByType<EnemyTankAI>(FindObjectsSortMode.None).Length;
-        if (remainingEnemies == 0)
+        // optimize
+        checkTimer -= Time.deltaTime;
+        if (checkTimer <= 0f)
         {
-            TriggerVictory();
+            checkTimer = 0.2f;
+
+            int remainingEnemies = FindObjectsByType<EnemyTankAI>(FindObjectsSortMode.None).Length;
+            if (remainingEnemies == 0)
+            {
+                TriggerVictory();
+            }
         }
     }
 
     public void TriggerVictory()
     {
+        if (isGameOver) return;
         isGameOver = true;
         if (victoryPanel != null) victoryPanel.SetActive(true);
     }
 
     public void TriggerGameOver()
     {
+        if (isGameOver) return;
         isGameOver = true;
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
     }
 
-
-    // next level
+    // Next Level
     public void NextLevel()
     {
         int nextIndex = SceneManager.GetActiveScene().buildIndex + 1;
@@ -59,18 +72,18 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // if last level
+            // Back
             SceneManager.LoadScene(0);
         }
     }
 
-    // Retry Button
+    // Retry
     public void RestartLevel()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // back home
+    // Back Home
     public void LoadMainMenu()
     {
         SceneManager.LoadScene(0);
