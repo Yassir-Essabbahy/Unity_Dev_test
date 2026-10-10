@@ -102,4 +102,21 @@ public class DebugStats : MonoBehaviour
     {
         Time.timeScale = speed;
     }
+
+    public void SkipLevel()
+    {
+        // Speed Back
+        Time.timeScale = 1f;
+
+        int nextIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex + 1;
+        if (nextIndex < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(nextIndex);
+        }
+        else
+        {
+            // Back Home if :
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+        }
+    }
 }
