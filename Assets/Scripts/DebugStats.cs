@@ -1,70 +1,105 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Profiling;
 using TMPro;
 
 public class DebugStats : MonoBehaviour
 {
+    [Header("UI References")]
     public GameObject debugPanel;
     public TextMeshProUGUI debugText;
-    public Tank_Inputs tankInputs;
-    public Transform tank;
 
-    float smoothDelta = 0.016f;
-    float smoothSpeed = 0f;
-    Vector3 lastPosition;
+    [Header("QA References")]
+    public GameObject enemyPrefab;
+    public Transform spawnPoint;
+
+    private bool isOpen = false;
+
+    // Performance Metrics
+    private float smoothDeltaTime = 0f;
+    private float currentFps;
+    private float avgFps;
+    private float frameTimeMs;
+
+    // Cheats
+    public static bool isGodMode = false;
 
     void Start()
     {
-        debugPanel.SetActive(false);
-        lastPosition = tank.position;
+        if (debugPanel != null)
+        {
+            debugPanel.SetActive(false);
+        }
     }
 
     void Update()
     {
-        if (Keyboard.current != null &&
-            Keyboard.current.f3Key.wasPressedThisFrame)
+        // open buttons
+        bool pressedF3 = Keyboard.current != null && Keyboard.current.f3Key.wasPressedThisFrame;
+        bool pressedSelect = Gamepad.current != null && Gamepad.current.selectButton.wasPressedThisFrame;
+
+        if (pressedF3 || pressedSelect)
         {
-            debugPanel.SetActive(!debugPanel.activeSelf);
+            isOpen = !isOpen;
+            if (debugPanel != null) debugPanel.SetActive(isOpen);
         }
 
-        // Calculate tank speed every frame
-        float speed = (tank.position - lastPosition).magnitude
-                      / Mathf.Max(Time.deltaTime, 0.0001f);
-
-        lastPosition = tank.position;
-        smoothSpeed = Mathf.Lerp(smoothSpeed, speed, 0.1f);
-
-        if (!debugPanel.activeSelf) return;
-
-        smoothDelta = Mathf.Lerp(
-            smoothDelta,
-            Time.unscaledDeltaTime,
-            0.1f
-        );
-
-        float fps = 1f / smoothDelta;
-        float ms = smoothDelta * 1000f;
-
-        string device = "Keyboard / Mouse";
-
-        if (Gamepad.current != null &&
-            Gamepad.current.wasUpdatedThisFrame)
+        // if its open
+        if (isOpen)
         {
-            device = "Gamepad";
+            CalculateMetrics();
+            UpdateDebugDisplay();
         }
+    }
 
-        int shells = GameObject.FindGameObjectsWithTag("Projectile").Length;
+    private void CalculateMetrics()
+    {
+        float dt = Time.unscaledDeltaTime;
+        frameTimeMs = dt * 1000f;
+        currentFps = 1f / Mathf.Max(dt, 0.0001f);
 
+        smoothDeltaTime += (dt - smoothDeltaTime) * 0.1f;
+        avgFps = 1f / Mathf.Max(smoothDeltaTime, 0.0001f);
+    }
+
+    private void UpdateDebugDisplay()
+    {
+        // Memory
+        float memoryMB = Profiler.GetTotalAllocatedMemoryLong() / (1024f * 1024f);
+
+        // Enemmy & BUllets
+        int enemiesCount = FindObjectsByType<EnemyTankAI>(FindObjectsSortMode.None).Length;
+        int bulletsCount = FindObjectsByType<Projectile>(FindObjectsSortMode.None).Length;
+
+        // Text
         debugText.text =
-            "Debug Overlay\n\n" +
-            "FPS: " + Mathf.Ceil(fps) + "\n" +
-            "Frame Time: " + ms.ToString("F1") + " ms\n" +
-            "Input Device: " + device + "\n" +
-            "Tank Speed: " + smoothSpeed.ToString("F2") + " m/s\n" +
-            "Movement: " + tankInputs.RotationInput.ToString("F1") +
-            ", " + tankInputs.ForwardInput.ToString("F1") + "\n" +
-            "Is Shooting: " + tankInputs.isShooting + "\n" +
-            "Active Shells: " + shells;
+            "<b>DEBUG OVERLAY</b>\n\n" +
+            $"FPS: {Mathf.RoundToInt(currentFps)} (Avg: {Mathf.RoundToInt(avgFps)})\n" +
+            $"Frame Time: {frameTimeMs:F1} ms\n" +
+            $"Memory: {memoryMB:F1} MB\n" +
+            $"Entities: Enemies [{enemiesCount}] | Bullets [{bulletsCount}]\n\n" +
+            $"God Mode: {(isGodMode ? "<color=green>ON</color>" : "<color=red>OFF</color>")}\n" +
+            $"TimeScale: {Time.timeScale:F1}x";
+    }
+
+    //Cheats
+
+    public void ToggleGodMode()
+    {
+        isGodMode = !isGodMode;
+    }
+
+    public void SpawnEnemy()
+    {
+        if (enemyPrefab != null)
+        {
+            Vector3 pos = spawnPoint != null ? spawnPoint.position : transform.position + Vector3.forward * 5f;
+            Instantiate(enemyPrefab, pos, Quaternion.identity);
+        }
+    }
+
+    public void SetGameSpeed(float speed)
+    {
+        Time.timeScale = speed;
     }
 }

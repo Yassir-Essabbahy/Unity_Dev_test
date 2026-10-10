@@ -18,6 +18,9 @@ public class TankHealth : MonoBehaviour
 
     public void takeDamage(int damage)
     {
+        // if god mode is enabled
+        if (DebugStats.isGodMode) return;
+        
         currentHealth -= damage;
         UpdateHealthBar();
 
