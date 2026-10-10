@@ -54,7 +54,7 @@ public class EnemyTankAI : MonoBehaviour
 
     void Start()
     {
-        // find by object type instead
+        // find by object type 
         TankController player = FindAnyObjectByType<TankController>();
         if (player != null)
         {
@@ -65,7 +65,7 @@ public class EnemyTankAI : MonoBehaviour
 
         if (turretTransform != null)
         {
-            // Initialize the turret’s look direction so it starts pointing forward
+            // Initialize the turret look direction so it starts pointing forward
             finalTurretLookDir = turretTransform.forward;
         }
     }
@@ -180,20 +180,40 @@ public class EnemyTankAI : MonoBehaviour
     /// </summary>
     private void ThrowProjectile1()
     {
-        if (projectilePrefab == null || throwPoint == null)
+        if (throwPoint == null)
         {
-            Debug.LogWarning("EnemyTankAI: Assign 'projectilePrefab' and 'throwPoint' in the Inspector.");
+            Debug.LogWarning("EnemyTankAI: Assign 'throwPoint' in the Inspector.");
             return;
         }
 
-        // Instantiate a new Rigidbody at the throwPoint's position & rotation
-        Rigidbody projInstance = Instantiate(
-            projectilePrefab,
-            throwPoint.position,
-            throwPoint.rotation
-        );
+        if (SimpleObjectPool.Instance != null)
+        {
+            GameObject projObj = SimpleObjectPool.Instance.GetProjectile();
+            if (projObj != null)
+            {
+                projObj.transform.position = throwPoint.position;
+                projObj.transform.rotation = throwPoint.rotation;
+                projObj.SetActive(true);
 
-        // Immediately give it velocity forward based on throwPoint's forward vector
-        projInstance.linearVelocity = throwPoint.forward * launchForce;
+                Rigidbody rb = projObj.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.linearVelocity = throwPoint.forward * launchForce;
+                    rb.angularVelocity = Vector3.zero;
+                }
+                return;
+            }
+        }
+
+        // Fallback if pool is unavailable
+        if (projectilePrefab != null)
+        {
+            Rigidbody projInstance = Instantiate(
+                projectilePrefab,
+                throwPoint.position,
+                throwPoint.rotation
+            );
+            projInstance.linearVelocity = throwPoint.forward * launchForce;
+        }
     }
 }

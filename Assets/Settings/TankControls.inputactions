@@ -128,8 +128,8 @@
                 },
                 {
                     "name": "",
-                    "id": "3fa17053-0f84-4442-a430-5e250004ca2f",
-                    "path": "<Gamepad>/leftTrigger",
+                    "id": "1d78aeca-e45e-4f8b-af91-58e9c9caacba",
+                    "path": "<Gamepad>/rightShoulder",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -139,7 +139,7 @@
                 },
                 {
                     "name": "",
-                    "id": "810ec804-3aaf-428f-b048-eb5e56541de0",
+                    "id": "fac3ea41-3ad8-4ea8-8b56-3d304bb7cc6d",
                     "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",

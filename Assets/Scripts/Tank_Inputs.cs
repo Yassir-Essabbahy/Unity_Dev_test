@@ -37,7 +37,7 @@ public class Tank_Inputs : MonoBehaviour
 
     [SerializeField] private InputActionAsset controls;
 
-    [SerializeField] private float stickDeadzone = 0.3f;
+    [SerializeField] private float stickDeadzone = 0.25f;
     [SerializeField] private float aimDistance = 10f;
 
     private Vector2 aimInput;
@@ -46,13 +46,16 @@ public class Tank_Inputs : MonoBehaviour
     private InputAction aimAction;
     private InputAction fireAction;
 
-    public bool isShooting {get; private set;}
+    public bool isShooting { get; private set; }
+
+    private bool isUsingGamepadAim = false;
+    private Vector3 lastAimDir = Vector3.forward;
 
     private void Awake()
     {
         if (controls == null) return;
 
-        //setup control actions
+        // setup control actions
         moveAction = controls.FindAction("Move");
         aimAction = controls.FindAction("Aim");
         fireAction = controls.FindAction("Fire");
@@ -80,21 +83,20 @@ public class Tank_Inputs : MonoBehaviour
             camera1 = Camera.main;
         }
 
-        // Move
+        // Move with deadzone 
         if (moveAction != null)
         {
             Vector2 move = moveAction.ReadValue<Vector2>();
-            rotationInput = move.x;
-            forwardInput = move.y;
+            rotationInput = Mathf.Abs(move.x) > 0.15f ? move.x : 0f;
+            forwardInput = Mathf.Abs(move.y) > 0.15f ? move.y : 0f;
         }
 
-        // Fire
-        if (fireAction != null)
-        {
-            isShooting = fireAction.IsPressed();
-        }
+        // Fire detection 
+        bool firePressed = fireAction != null && fireAction.IsPressed();
+        bool mouseFire = Mouse.current != null && Mouse.current.leftButton.isPressed;
+        isShooting = firePressed || mouseFire;
 
-        // Right stickv to aim
+        // Right stick aim reading
         Vector2 stickAim = Vector2.zero;
         if (aimAction != null && aimAction.activeControl != null && aimAction.activeControl.device is Gamepad)
         {
@@ -105,16 +107,30 @@ public class Tank_Inputs : MonoBehaviour
             stickAim = Gamepad.current.rightStick.ReadValue();
         }
 
-        // right stick priority if > stick deadzone
+        // Aim logic
         if (stickAim.magnitude > stickDeadzone)
         {
-            Vector3 aimDir = new Vector3(stickAim.x, 0f, stickAim.y).normalized;
-            reticlePosition = transform.position + (aimDir * aimDistance);
+            isUsingGamepadAim = true;
+            lastAimDir = new Vector3(stickAim.x, 0f, stickAim.y).normalized;
+            reticlePosition = transform.position + (lastAimDir * aimDistance);
             reticleNormal = Vector3.up;
+        }
+        else if (isUsingGamepadAim)
+        {
+            // When right stick returns to neutral keep last aim
+            reticlePosition = transform.position + (lastAimDir * aimDistance);
+            reticleNormal = Vector3.up;
+
+            // switch
+            if (Mouse.current != null && Mouse.current.delta.ReadValue().sqrMagnitude > 4f)
+            {
+                isUsingGamepadAim = false;
+                HandleInputs();
+            }
         }
         else
         {
-            // if mouse not used
+            // Mouse aiming
             HandleInputs();
         }
     }
@@ -127,23 +143,29 @@ public class Tank_Inputs : MonoBehaviour
 
     protected virtual void HandleInputs()
     {
+        if (camera1 == null) return;
+
         Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : (Vector2)Input.mousePosition;
         Ray screenRay = camera1.ScreenPointToRay(mousePos);
-        RaycastHit hit;
+        float effectiveRayDist = Mathf.Max(rayDistance, 500f);
 
-        if(Physics.Raycast(screenRay, out hit, rayDistance, groundLayer))
+        // Raycast against groundLayer
+        if (Physics.Raycast(screenRay, out RaycastHit hit, effectiveRayDist, groundLayer))
         {
-            reticlePosition = hit.point;
-            reticleNormal = hit.normal;
-        }
-        else
-        {
-            Plane groundPlane = new Plane(Vector3.up, transform.position);
-            if (groundPlane.Raycast(screenRay, out float distance))
+            if (!hit.transform.IsChildOf(transform))
             {
-                reticlePosition = screenRay.GetPoint(distance);
-                reticleNormal = Vector3.up;
+                reticlePosition = hit.point;
+                reticleNormal = hit.normal;
+                return;
             }
         }
-}
+
+        // Fallback to ground plane at tank base position
+        Plane groundPlane = new Plane(Vector3.up, new Vector3(0f, transform.position.y, 0f));
+        if (groundPlane.Raycast(screenRay, out float distance))
+        {
+            reticlePosition = screenRay.GetPoint(distance);
+            reticleNormal = Vector3.up;
+        }
+    }
 }

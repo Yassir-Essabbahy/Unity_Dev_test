@@ -7,9 +7,17 @@ public class Projectile : MonoBehaviour
 {
     [Header("settings")]
     public ParticleSystem impactFX;
-    public float lifeTime = 3f; //bullet set inactive time
+    public float lifeTime = 3f; 
 
     private Coroutine disableCoroutine;
+    private Rigidbody rb;
+    private CinemachineImpulseSource impulseSource;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        impulseSource = GetComponent<CinemachineImpulseSource>();
+    }
 
     void OnEnable()
     {
@@ -18,35 +26,48 @@ public class Projectile : MonoBehaviour
 
     void OnDisable()
     {
-        //stop timer before times up
+        // stop timer before time is up
         if (disableCoroutine != null)
         {
             StopCoroutine(disableCoroutine);
         }
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 
-        private IEnumerator DeactivateAfterDelay()
-        {
-            yield return new WaitForSeconds(lifeTime);
-            gameObject.SetActive(false);
-        }
+    private IEnumerator DeactivateAfterDelay()
+    {
+        yield return new WaitForSeconds(lifeTime);
+        gameObject.SetActive(false);
+    }
 
     private void OnCollisionEnter(Collision collision)
     {
-        //cinemachine impulse on collision
-        CinemachineImpulseSource impulse = GetComponent<CinemachineImpulseSource>();
-        if (impulse != null)
+        // cinemachine impulse on collision
+        if (impulseSource != null)
         {
-            impulse.GenerateImpulse();
+            impulseSource.GenerateImpulse();
         }
 
+        // Spawn pooled impact FX
         if (impactFX != null)
         {
-        Instantiate(impactFX, transform.position, Quaternion.identity);
-
+            if (SimpleObjectPool.Instance != null)
+            {
+                SimpleObjectPool.Instance.SpawnExplosion(impactFX.gameObject, transform.position, Quaternion.identity);
+            }
+            else
+            {
+                GameObject fx = Instantiate(impactFX.gameObject, transform.position, Quaternion.identity);
+                Destroy(fx, 1.5f);
+            }
         }
 
-        if(collision.gameObject.CompareTag("PlayerTank"))
+        if (collision.gameObject.CompareTag("PlayerTank"))
         {
             if (collision.gameObject.TryGetComponent<TankHealth>(out var playerHealth))
             {
@@ -56,14 +77,12 @@ public class Projectile : MonoBehaviour
 
         if (collision.gameObject.CompareTag("EnemyTank"))
         {
-           if (collision.gameObject.TryGetComponent<EnemyTankHealth>(out var enemyHealth))
-           {
+            if (collision.gameObject.TryGetComponent<EnemyTankHealth>(out var enemyHealth))
+            {
                 enemyHealth.takeDamage(20);
-           }
+            }
         }
+
         gameObject.SetActive(false);
-
-        
-
     }
 }

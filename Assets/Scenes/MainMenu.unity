@@ -866,7 +866,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   victoryPanel: {fileID: 0}
   gameOverPanel: {fileID: 0}
-  requiresKillingEnemies: 1
+  requiresKillingEnemies: 0
 --- !u!4 &2082891870
 Transform:
   m_ObjectHideFlags: 0

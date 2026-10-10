@@ -17,21 +17,24 @@ public class ThrowProjectile : MonoBehaviour
     [Tooltip("Minimum time (in seconds) between consecutive shots.")]
     public float timeBetweenShots = 0.5f;
 
-    // Time at which we’re next allowed to shoot
     private float nextTimeToFire = 0f;
 
     //Cinemachine impulse component
     private CinemachineImpulseSource impulseSource;
 
+    private Tank_Inputs tankInputs;
+
     void Start()
     {
+        tankInputs = GetComponent<Tank_Inputs>();
         impulseSource = GetComponent<CinemachineImpulseSource>();
     }
 
     void Update()
     {
-        // On left mouse‐button down, check cooldown
-        if (Input.GetMouseButtonDown(0) && Time.time >= nextTimeToFire)
+        bool wantsToShoot = (tankInputs != null && tankInputs.isShooting) || Input.GetMouseButton(0);
+
+        if (wantsToShoot && Time.time >= nextTimeToFire)
         {
             ThrowProjectile1();
             nextTimeToFire = Time.time + timeBetweenShots;
