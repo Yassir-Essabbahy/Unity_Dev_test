@@ -192,17 +192,6 @@ public partial class @TankControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""8a24e00f-6ef9-4574-ba97-503e2ea06399"",
-                    ""path"": ""<Mouse>/position"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Aim"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""26205778-25a3-4e8f-9280-d62640ca227b"",
                     ""path"": ""<Gamepad>/rightStick"",
                     ""interactions"": """",

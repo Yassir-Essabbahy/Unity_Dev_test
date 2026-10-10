@@ -1,8 +1,9 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
 
-public class DebugOverlay : MonoBehaviour
+public class DebugStats : MonoBehaviour
 {
     public GameObject debugPanel;
     public TextMeshProUGUI debugText;
@@ -21,25 +22,34 @@ public class DebugOverlay : MonoBehaviour
 
     void Update()
     {
-        // F3 show panel
-        if (Keyboard.current.f3Key.wasPressedThisFrame)
+        if (Keyboard.current != null &&
+            Keyboard.current.f3Key.wasPressedThisFrame)
         {
             debugPanel.SetActive(!debugPanel.activeSelf);
         }
 
-        if (!debugPanel.activeSelf) return;
+        // Calculate tank speed every frame
+        float speed = (tank.position - lastPosition).magnitude
+                      / Mathf.Max(Time.deltaTime, 0.0001f);
 
-        // Smooth the frame time so the FPS number doesn't flicker
-        smoothDelta = Mathf.Lerp(smoothDelta, Time.unscaledDeltaTime, 0.1f);
-        float fps = 1f / smoothDelta;
-        float ms = smoothDelta * 1000f;
-
-        float speed = (tank.position - lastPosition).magnitude / Time.deltaTime;
         lastPosition = tank.position;
         smoothSpeed = Mathf.Lerp(smoothSpeed, speed, 0.1f);
 
+        if (!debugPanel.activeSelf) return;
+
+        smoothDelta = Mathf.Lerp(
+            smoothDelta,
+            Time.unscaledDeltaTime,
+            0.1f
+        );
+
+        float fps = 1f / smoothDelta;
+        float ms = smoothDelta * 1000f;
+
         string device = "Keyboard / Mouse";
-        if (Gamepad.current != null && Gamepad.current.wasUpdatedThisFrame)
+
+        if (Gamepad.current != null &&
+            Gamepad.current.wasUpdatedThisFrame)
         {
             device = "Gamepad";
         }
@@ -48,10 +58,12 @@ public class DebugOverlay : MonoBehaviour
 
         debugText.text =
             "Debug Overlay\n\n" +
-            "FPS: " + Mathf.Ceil(fps) + " (" + ms.ToString("F1") +
+            "FPS: " + Mathf.Ceil(fps) + "\n" +
+            "Frame Time: " + ms.ToString("F1") + " ms\n" +
             "Input Device: " + device + "\n" +
-            "Tank Speed: " + speed.ToString("F2") + " m/s\n" +
-            "Movement: " + tankInputs.RotationInput.ToString("F1") + ", " + tankInputs.ForwardInput.ToString("F1") + "\n" +
+            "Tank Speed: " + smoothSpeed.ToString("F2") + " m/s\n" +
+            "Movement: " + tankInputs.RotationInput.ToString("F1") +
+            ", " + tankInputs.ForwardInput.ToString("F1") + "\n" +
             "Is Shooting: " + tankInputs.isShooting + "\n" +
             "Active Shells: " + shells;
     }

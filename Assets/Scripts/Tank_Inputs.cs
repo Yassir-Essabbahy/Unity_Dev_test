@@ -95,9 +95,17 @@ public class Tank_Inputs : MonoBehaviour
         }
 
         // Right stickv to aim
-        Vector2 stickAim = aimAction != null ? aimAction.ReadValue<Vector2>() : Vector2.zero;
+        Vector2 stickAim = Vector2.zero;
+        if (aimAction != null && aimAction.activeControl != null && aimAction.activeControl.device is Gamepad)
+        {
+            stickAim = aimAction.ReadValue<Vector2>();
+        }
+        else if (Gamepad.current != null)
+        {
+            stickAim = Gamepad.current.rightStick.ReadValue();
+        }
 
-        // deadzone handle
+        // right stick priority if > stick deadzone
         if (stickAim.magnitude > stickDeadzone)
         {
             Vector3 aimDir = new Vector3(stickAim.x, 0f, stickAim.y).normalized;
@@ -106,7 +114,7 @@ public class Tank_Inputs : MonoBehaviour
         }
         else
         {
-            //if mouse used
+            // if mouse not used
             HandleInputs();
         }
     }
